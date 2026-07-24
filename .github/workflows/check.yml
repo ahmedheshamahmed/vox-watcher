@@ -20,12 +20,4 @@ jobs:
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           SCRAPEDO_TOKEN: ${{ secrets.SCRAPEDO_TOKEN }}
-        run: python check_showtimes.py      - name: Install dependencies
-        run: |
-          pip install playwright
-          playwright install --with-deps chromium
-
-      - name: Run check
-        env:
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python check_showtimes.py
