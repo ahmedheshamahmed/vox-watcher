@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Diagnostic - plain curl request
+      - name: Diagnostic - plain curl request (HTTP/2)
         run: |
           curl -sS -o /tmp/curl_out.html -w "HTTP status: %{http_code}\n" \
             -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" \
@@ -24,6 +24,15 @@ jobs:
             "https://egy.voxcinemas.com/movies/spider-man-brand-new-day" || echo "curl failed/timed out"
           echo "--- first 500 chars of response ---"
           head -c 500 /tmp/curl_out.html || true
+
+      - name: Diagnostic - plain curl request (forced HTTP/1.1)
+        run: |
+          curl -sS --http1.1 -o /tmp/curl_out2.html -w "HTTP status: %{http_code}\n" \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" \
+            --max-time 30 \
+            "https://egy.voxcinemas.com/movies/spider-man-brand-new-day" || echo "curl failed/timed out"
+          echo "--- first 500 chars of response ---"
+          head -c 500 /tmp/curl_out2.html || true
 
       - name: Install dependencies
         run: |
