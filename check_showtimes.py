@@ -33,6 +33,7 @@ def get_date_tabs_text() -> str:
                 browser = p.chromium.launch(
                     args=[
                         "--disable-blink-features=AutomationControlled",  # look less like an automated browser
+                        "--disable-http2",  # GitHub-hosted runners sometimes can't negotiate HTTP/2 cleanly
                     ]
                 )
                 context = browser.new_context(
