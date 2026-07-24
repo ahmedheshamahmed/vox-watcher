@@ -17,7 +17,7 @@ import urllib.request
 import urllib.parse
 
 URL = "https://egy.voxcinemas.com/movies/spider-man-brand-new-day#showtimes"
-TARGET_DATE = "06 Aug"  # matches "Thu 06 Aug"
+TARGET_DATE = "30 Jul"  # matches "Thu 06 Aug"
 NTFY_TOPIC = os.environ["NTFY_TOPIC"]
 SCRAPEDO_TOKEN = os.environ["SCRAPEDO_TOKEN"]
 
