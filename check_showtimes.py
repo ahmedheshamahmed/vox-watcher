@@ -10,6 +10,7 @@ Env vars required:
 import os
 import re
 import sys
+import time
 from playwright.sync_api import sync_playwright
 import urllib.request
 
@@ -17,24 +18,51 @@ URL = "https://egy.voxcinemas.com/movies/spider-man-brand-new-day#showtimes"
 TARGET_DATE = "06 Aug"   # matches "Thu 06 Aug" — weekday-agnostic on purpose
 NTFY_TOPIC = os.environ["NTFY_TOPIC"]
 
+REAL_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+)
+
 
 def get_date_tabs_text() -> str:
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        page.goto(URL, wait_until="networkidle", timeout=60000)
+    last_error = None
 
-        # Try to click into the showtimes/booking tab if it's not already visible
+    for attempt in range(1, 4):  # up to 3 tries — the site's CDN sometimes blocks headless connections transiently
         try:
-            page.get_by_text("View Showtimes", exact=False).first.click(timeout=5000)
-            page.wait_for_timeout(3000)
-        except Exception:
-            pass
+            with sync_playwright() as p:
+                browser = p.chromium.launch(
+                    args=[
+                        "--disable-blink-features=AutomationControlled",  # look less like an automated browser
+                    ]
+                )
+                context = browser.new_context(
+                    user_agent=REAL_USER_AGENT,
+                    viewport={"width": 1366, "height": 900},
+                    locale="en-US",
+                    extra_http_headers={"Accept-Language": "en-US,en;q=0.9"},
+                )
+                page = context.new_page()
+                page.goto(URL, wait_until="domcontentloaded", timeout=45000)
 
-        page.wait_for_timeout(3000)  # let showtimes widget finish loading
-        body_text = page.inner_text("body")
-        browser.close()
-        return body_text
+                # Try to click into the showtimes/booking tab if it's not already visible
+                try:
+                    page.get_by_text("View Showtimes", exact=False).first.click(timeout=5000)
+                    page.wait_for_timeout(3000)
+                except Exception:
+                    pass
+
+                page.wait_for_timeout(4000)  # let showtimes widget finish loading
+                body_text = page.inner_text("body")
+                browser.close()
+                return body_text
+
+        except Exception as e:
+            last_error = e
+            print(f"Attempt {attempt} failed: {e}")
+            if attempt < 3:
+                time.sleep(8)
+
+    raise last_error
 
 
 def notify(title: str, message: str, priority: str = "urgent"):
