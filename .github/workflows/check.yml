@@ -2,8 +2,8 @@ name: Check VOX showtimes
 
 on:
   schedule:
-    # Runs every 15 minutes (GitHub may delay a few minutes during high load)
-    - cron: "*/15 * * * *"
+    # Runs once per hour (kept under scrape.do's free 1,000 requests/month)
+    - cron: "0 * * * *"
   workflow_dispatch: {}   # lets you trigger it manually from the Actions tab too
 
 jobs:
@@ -16,25 +16,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Diagnostic - plain curl request (HTTP/2)
-        run: |
-          curl -sS -o /tmp/curl_out.html -w "HTTP status: %{http_code}\n" \
-            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" \
-            --max-time 30 \
-            "https://egy.voxcinemas.com/movies/spider-man-brand-new-day" || echo "curl failed/timed out"
-          echo "--- first 500 chars of response ---"
-          head -c 500 /tmp/curl_out.html || true
-
-      - name: Diagnostic - plain curl request (forced HTTP/1.1)
-        run: |
-          curl -sS --http1.1 -o /tmp/curl_out2.html -w "HTTP status: %{http_code}\n" \
-            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" \
-            --max-time 30 \
-            "https://egy.voxcinemas.com/movies/spider-man-brand-new-day" || echo "curl failed/timed out"
-          echo "--- first 500 chars of response ---"
-          head -c 500 /tmp/curl_out2.html || true
-
-      - name: Install dependencies
+      - name: Run check
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          SCRAPEDO_TOKEN: ${{ secrets.SCRAPEDO_TOKEN }}
+        run: python check_showtimes.py      - name: Install dependencies
         run: |
           pip install playwright
           playwright install --with-deps chromium
